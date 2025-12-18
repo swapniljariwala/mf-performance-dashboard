@@ -1,0 +1,15 @@
+# ET Money Mutual Fund Category URLs
+# Use these URLs with the scraper: python scrape_etmoney_multicap.py --url <URL>
+
+# Equity Categories
+https://www.etmoney.com/mutual-funds/equity/large-cap/32
+https://www.etmoney.com/mutual-funds/equity/mid-cap/35
+https://www.etmoney.com/mutual-funds/equity/small-cap/36
+https://www.etmoney.com/mutual-funds/equity/multi-cap/34
+https://www.etmoney.com/mutual-funds/equity/flexi-cap/79
+https://www.etmoney.com/mutual-funds/equity/value-oriented/37
+https://www.etmoney.com/mutual-funds/equity/international/50
+
+# Hybrid Categories
+https://www.etmoney.com/mutual-funds/hybrid/aggressive-hybrid/68
+https://www.etmoney.com/mutual-funds/hybrid/dynamic-asset-allocation/74
