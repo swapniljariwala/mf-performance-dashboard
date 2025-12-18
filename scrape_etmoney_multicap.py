@@ -166,22 +166,28 @@ class ETMoneyScraper:
         soup = BeautifulSoup(html, 'html.parser')
         links = []
         
+        # Find the main fund listing container (excludes footer and other sections)
+        fund_listing = soup.find('div', id='fundListing')
+        if not fund_listing:
+            logger.warning("Could not find #fundListing container, searching entire page")
+            fund_listing = soup
+        
         # Pattern to match fund URLs: /mutual-funds/<slug>/<id>
         fund_pattern = re.compile(r'^/mutual-funds/[^/]+/\d+$')
         
-        for a_tag in soup.find_all('a', href=True):
+        for a_tag in fund_listing.find_all('a', href=True):
             href = a_tag['href']
             if fund_pattern.match(href):
                 full_url = urljoin(self.BASE_URL, href)
                 if full_url not in links:
                     links.append(full_url)
         
-        logger.info(f"Found {len(links)} fund links on category page")
+        logger.info(f"Found {len(links)} fund links in listing container")
         return links
     
     def parse_next_data(self, html: str) -> Optional[Dict]:
         """
-        Extract __NEXT_DATA__ JSON from the page if present.
+        Extract __NEXT_DATA__ JSON or JavaScript variable data from the page.
         
         Args:
             html: HTML content
@@ -190,6 +196,8 @@ class ETMoneyScraper:
             Parsed JSON data or None
         """
         soup = BeautifulSoup(html, 'html.parser')
+        
+        # Try __NEXT_DATA__ first (standard Next.js format)
         script_tag = soup.find('script', id='__NEXT_DATA__', type='application/json')
         
         if script_tag and script_tag.string:
@@ -198,6 +206,40 @@ class ETMoneyScraper:
                 return data
             except json.JSONDecodeError as e:
                 logger.warning(f"Failed to parse __NEXT_DATA__: {e}")
+        
+        # ET Money doesn't use __NEXT_DATA__, it uses inline JavaScript variables
+        # Look for: var compSchemeDTO = {...}
+        script_tags = soup.find_all('script')
+        for script in script_tags:
+            if script.string and 'var compSchemeDTO' in script.string:
+                try:
+                    # Extract the JSON part after "var compSchemeDTO = "
+                    script_text = script.string
+                    start_idx = script_text.find('var compSchemeDTO = ')
+                    if start_idx != -1:
+                        # Find the JSON object
+                        json_start = script_text.find('{', start_idx)
+                        if json_start != -1:
+                            # Find the matching closing brace
+                            brace_count = 0
+                            json_end = json_start
+                            for i in range(json_start, len(script_text)):
+                                if script_text[i] == '{':
+                                    brace_count += 1
+                                elif script_text[i] == '}':
+                                    brace_count -= 1
+                                    if brace_count == 0:
+                                        json_end = i + 1
+                                        break
+                            
+                            if json_end > json_start:
+                                json_str = script_text[json_start:json_end]
+                                data = json.loads(json_str)
+                                logger.info("Successfully extracted compSchemeDTO data")
+                                return data
+                except (json.JSONDecodeError, ValueError) as e:
+                    logger.warning(f"Failed to parse compSchemeDTO: {e}")
+                    continue
         
         return None
     
@@ -257,83 +299,90 @@ class ETMoneyScraper:
             'return_since_inception': None
         }
         
-        # Try to extract from __NEXT_DATA__ first
+        # Try to extract from __NEXT_DATA__ or compSchemeDTO first
         next_data = self.parse_next_data(html)
         if next_data:
             try:
-                # Navigate through the structure to find fund data
+                # ET Money structure: compSchemeDTO.currentSchemeDto and currentSchemeDetailDto
+                current_scheme = next_data.get('currentSchemeDto', {})
+                current_detail = next_data.get('currentSchemeDetailDto', {})
+                
+                # Also check standard Next.js structure as fallback
                 props = next_data.get('props', {})
-                page_props = props.get('pageProps', {})
+                page_props = props.get('pageProps', {}) if props else {}
                 
                 # Extract fund name
-                if 'fundName' in page_props:
-                    data['fund_name'] = page_props['fundName']
+                data['fund_name'] = (
+                    current_scheme.get('parentDisplayName') or 
+                    current_scheme.get('nameOfScheme') or
+                    page_props.get('fundName')
+                )
                 
-                # Extract fund age
-                inception_date = fund_details.get('inceptionDate') or fund_info.get('inceptionDate') or page_props.get('inceptionDate')
-                fund_age = fund_details.get('fundAge') or fund_info.get('fundAge') or page_props.get('fundAge')
-                
-                if fund_age:
-                    data['fund_age_years'] = self.clean_numeric_value(str(fund_age))
-                elif inception_date:
-                    # Try to parse inception date and calculate age
+                # Extract fund age from inception date
+                fund_start_date = current_detail.get('fundStartDate', {})
+                if fund_start_date and 'value' in fund_start_date:
                     try:
                         from datetime import datetime
-                        # Try different date formats
-                        for date_format in ['%Y-%m-%d', '%d-%m-%Y', '%d/%m/%Y', '%Y/%m/%d']:
-                            try:
-                                inception = datetime.strptime(str(inception_date).split('T')[0], date_format)
-                                age_years = (datetime.now() - inception).days / 365.25
-                                data['fund_age_years'] = round(age_years, 2)
-                                break
-                            except ValueError:
-                                continue
-                    except Exception:
-                        pass
+                        # ET Money format: "DD/MM/YYYY"
+                        date_str = fund_start_date['value']
+                        inception = datetime.strptime(date_str, '%d/%m/%Y')
+                        age_years = (datetime.now() - inception).days / 365.25
+                        data['fund_age_years'] = round(age_years, 2)
+                    except (ValueError, Exception) as e:
+                        logger.warning(f"Failed to parse inception date: {e}")
                 
-                # Extract metrics from various possible locations
-                fund_details = page_props.get('fundDetails', {})
-                fund_info = page_props.get('fundInfo', {})
-                
-                # AUM
-                aum = fund_details.get('aum') or fund_info.get('aum')
-                if aum:
-                    data['aum_cr'] = self.clean_numeric_value(str(aum))
+                # AUM - assetSize in Crores
+                asset_size = current_detail.get('assetSize')
+                if asset_size:
+                    data['aum_cr'] = self.clean_numeric_value(str(asset_size))
                 
                 # Expense ratio
-                expense = fund_details.get('expenseRatio') or fund_info.get('expenseRatio')
+                expense = current_detail.get('expenseRatio')
                 if expense:
                     data['expense_ratio'] = self.clean_numeric_value(str(expense))
                 
-                # Risk metrics
-                risk_metrics = fund_details.get('riskMetrics', {}) or fund_info.get('riskMetrics', {})
-                if risk_metrics:
-                    data['alpha'] = self.clean_numeric_value(str(risk_metrics.get('alpha', '')))
-                    data['sharpe'] = self.clean_numeric_value(str(risk_metrics.get('sharpe', '')))
-                    data['beta'] = self.clean_numeric_value(str(risk_metrics.get('beta', '')))
-                    data['sd'] = self.clean_numeric_value(str(risk_metrics.get('standardDeviation', '')))
+                # Risk metrics from mfReportCardData
+                report_card = current_detail.get('mfReportCardData', {})
+                if report_card:
+                    data['alpha'] = self.clean_numeric_value(str(report_card.get('alpha', '')))
+                    data['sharpe'] = self.clean_numeric_value(str(report_card.get('sharpeRatio', '')))
+                    data['beta'] = self.clean_numeric_value(str(report_card.get('beta', '')))
+                    data['sd'] = self.clean_numeric_value(str(report_card.get('standardDeviation', '')))
                 
-                # Market cap allocation
-                allocation = fund_details.get('allocation', {}) or fund_info.get('allocation', {}) or page_props.get('allocation', {})
-                if allocation:
-                    data['large_cap_pct'] = self.clean_numeric_value(str(allocation.get('largeCap', '')))
-                    data['mid_cap_pct'] = self.clean_numeric_value(str(allocation.get('midCap', '')))
-                    data['small_cap_pct'] = self.clean_numeric_value(str(allocation.get('smallCap', '')))
-                    data['other_cap_pct'] = self.clean_numeric_value(str(allocation.get('otherCap', '') or allocation.get('other', '')))
+                # Market cap allocation from mfPortfolioData
+                portfolio = current_detail.get('mfPortfolioData', {})
+                if portfolio:
+                    data['large_cap_pct'] = self.clean_numeric_value(str(portfolio.get('largePercentage', '')))
+                    data['mid_cap_pct'] = self.clean_numeric_value(str(portfolio.get('midPercentage', '')))
+                    data['small_cap_pct'] = self.clean_numeric_value(str(portfolio.get('smallPercentage', '')))
+                    # Calculate others (giant + tiny)
+                    giant = self.clean_numeric_value(str(portfolio.get('giantPercentage', 0))) or 0
+                    tiny = self.clean_numeric_value(str(portfolio.get('tinyPercentage', 0))) or 0
+                    if giant or tiny:
+                        data['other_cap_pct'] = giant + tiny
                 
-                # Returns
-                returns = fund_details.get('returns', {}) or fund_info.get('returns', {}) or page_props.get('returns', {})
-                if returns:
-                    data['return_1m'] = self.clean_numeric_value(str(returns.get('1M', '') or returns.get('oneMonth', '')))
-                    data['return_3m'] = self.clean_numeric_value(str(returns.get('3M', '') or returns.get('threeMonth', '')))
-                    data['return_6m'] = self.clean_numeric_value(str(returns.get('6M', '') or returns.get('sixMonth', '')))
-                    data['return_1y'] = self.clean_numeric_value(str(returns.get('1Y', '') or returns.get('oneYear', '')))
-                    data['return_3y'] = self.clean_numeric_value(str(returns.get('3Y', '') or returns.get('threeYear', '')))
-                    data['return_5y'] = self.clean_numeric_value(str(returns.get('5Y', '') or returns.get('fiveYear', '')))
-                    data['return_since_inception'] = self.clean_numeric_value(str(returns.get('sinceInception', '') or returns.get('SI', '')))
+                # Returns - extract from mfReturnData.mfReturnDetails
+                mf_return_data = current_detail.get('mfReturnData', {})
+                if mf_return_data:
+                    returns = mf_return_data.get('mfReturnDetails', {})
+                    if returns:
+                        # ET Money uses day counts as keys (30, 90, 180, 365, 1095, 1825)
+                        # Keys are either strings or integers depending on JSON parsing
+                        data['return_1m'] = self.clean_numeric_value(str(returns.get(30) or returns.get('30', '')))
+                        data['return_3m'] = self.clean_numeric_value(str(returns.get(90) or returns.get('90', '')))
+                        data['return_6m'] = self.clean_numeric_value(str(returns.get(180) or returns.get('180', '')))
+                        data['return_1y'] = self.clean_numeric_value(str(returns.get(365) or returns.get('365', '')))
+                        data['return_3y'] = self.clean_numeric_value(str(returns.get(1095) or returns.get('1095', '')))
+                        data['return_5y'] = self.clean_numeric_value(str(returns.get(1825) or returns.get('1825', '')))
+                        # Since inception
+                        data['return_since_inception'] = self.clean_numeric_value(str(
+                            mf_return_data.get('returnSinceLaunch', '') or 
+                            returns.get(9999) or 
+                            returns.get('9999', '')
+                        ))
                 
             except Exception as e:
-                logger.warning(f"Error parsing __NEXT_DATA__: {e}")
+                logger.warning(f"Error parsing JSON data: {e}")
         
         # Fallback to HTML parsing if data not found
         if not data['fund_name']:
@@ -412,22 +461,28 @@ class ETMoneyScraper:
                 if match:
                     data[key] = self.clean_numeric_value(match.group(1))
         
-        # Returns patterns
-        return_patterns = {
-            'return_1m': r'(?:1\s*Month|1M)\s*[:\-]?\s*([\-\d,\.]+)%?',
-            'return_3m': r'(?:3\s*Months?|3M)\s*[:\-]?\s*([\-\d,\.]+)%?',
-            'return_6m': r'(?:6\s*Months?|6M)\s*[:\-]?\s*([\-\d,\.]+)%?',
-            'return_1y': r'(?:1\s*Year|1Y)\s*[:\-]?\s*([\-\d,\.]+)%?',
-            'return_3y': r'(?:3\s*Years?|3Y)\s*[:\-]?\s*([\-\d,\.]+)%?',
-            'return_5y': r'(?:5\s*Years?|5Y)\s*[:\-]?\s*([\-\d,\.]+)%?',
-            'return_since_inception': r'(?:Since\s*Inception|SI)\s*[:\-]?\s*([\-\d,\.]+)%?'
-        }
+        # Returns patterns - ONLY use HTML fallback if JSON parsing completely failed
+        # Don't use HTML fallback for individual missing returns (e.g., new funds without 3Y/5Y history)
+        # Check if ANY return was extracted from JSON to determine if we should skip HTML fallback
+        any_return_from_json = any(data[k] is not None for k in ['return_1m', 'return_3m', 'return_6m', 'return_1y', 'return_3y', 'return_5y', 'return_since_inception'])
         
-        for key, pattern in return_patterns.items():
-            if not data[key]:
-                match = re.search(pattern, text_content, re.IGNORECASE)
-                if match:
-                    data[key] = self.clean_numeric_value(match.group(1))
+        if not any_return_from_json:
+            # Only use HTML fallback if no returns were extracted from JSON at all
+            return_patterns = {
+                'return_1m': r'(?:1\s*Month|1M)\s*[:\-]?\s*([\-\d,\.]+)%?',
+                'return_3m': r'(?:3\s*Months?|3M)\s*[:\-]?\s*([\-\d,\.]+)%?',
+                'return_6m': r'(?:6\s*Months?|6M)\s*[:\-]?\s*([\-\d,\.]+)%?',
+                'return_1y': r'(?:1\s*Year|1Y)\s*[:\-]?\s*([\-\d,\.]+)%?',
+                'return_3y': r'(?:3\s*Years?|3Y)\s*[:\-]?\s*([\-\d,\.]+)%?',
+                'return_5y': r'(?:5\s*Years?|5Y)\s*[:\-]?\s*([\-\d,\.]+)%?',
+                'return_since_inception': r'(?:Since\s*Inception|SI)\s*[:\-]?\s*([\-\d,\.]+)%?'
+            }
+            
+            for key, pattern in return_patterns.items():
+                if not data[key]:
+                    match = re.search(pattern, text_content, re.IGNORECASE)
+                    if match:
+                        data[key] = self.clean_numeric_value(match.group(1))
         
         # Fund age patterns
         if not data['fund_age_years']:
