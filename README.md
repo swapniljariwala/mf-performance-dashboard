@@ -6,7 +6,7 @@
 
 A Python scraper that collects mutual funds data from ET Money across multiple categories, and an interactive Streamlit dashboard for visual analysis and fund selection.
 
-> **Demo:** [Live Dashboard](https://your-app-name.streamlit.app) (coming soon)
+> **Demo:** [Live Dashboard](https://mf-category-explorer.streamlit.app/) 
 
 ## Overview
 
