@@ -33,8 +33,6 @@ with st.sidebar:
         index=0
     )
     
-    st.divider()
-    
     # Return period selector
     return_period_options = {
         "1 Month": "return_1m",
@@ -54,8 +52,6 @@ with st.sidebar:
     
     return_col = return_period_options[selected_period]
     
-    st.divider()
-    
     # View selector
     view_options = {
         "Return vs Risk (SD)": ("sd", "Risk-Return Tradeoff"),
@@ -68,6 +64,70 @@ with st.sidebar:
         "View Type:",
         options=list(view_options.keys()),
         index=0
+    )
+    
+    st.markdown("---")
+    st.subheader("Filters")
+    
+    # Return range filter
+    min_return = st.slider(
+        "Min Return (%):",
+        min_value=-50.0,
+        max_value=100.0,
+        value=0.0,
+        step=1.0
+    )
+    
+    max_return = st.slider(
+        "Max Return (%):",
+        min_value=-50.0,
+        max_value=100.0,
+        value=100.0,
+        step=1.0
+    )
+    
+    # Risk (SD) filter
+    max_sd = st.slider(
+        "Max Risk - SD (%):",
+        min_value=0.0,
+        max_value=50.0,
+        value=50.0,
+        step=1.0
+    )
+    
+    # AUM range filter
+    min_aum = st.slider(
+        "Min AUM (Crores):",
+        min_value=0,
+        max_value=10000,
+        value=0,
+        step=100
+    )
+    
+    max_aum = st.slider(
+        "Max AUM (Crores):",
+        min_value=0,
+        max_value=50000,
+        value=50000,
+        step=500
+    )
+    
+    # Expense ratio filter
+    max_expense = st.slider(
+        "Max Expense Ratio (%):",
+        min_value=0.0,
+        max_value=5.0,
+        value=5.0,
+        step=0.1
+    )
+    
+    # Fund age filter
+    min_age = st.slider(
+        "Min Fund Age (Years):",
+        min_value=0.0,
+        max_value=30.0,
+        value=0.0,
+        step=0.5
     )
 
 # ===== HELPER FUNCTIONS =====
@@ -115,6 +175,24 @@ st.subheader(f"📊 {single_category} - {title_suffix}")
 # Filter for single category
 df_single = df[df['fund_category'] == single_category]
 df_single = get_filtered_data(df_single, x_col, y_col)
+
+# Apply user filters
+df_single = df_single[
+    (df_single[y_col] >= min_return) &
+    (df_single[y_col] <= max_return) &
+    (df_single['sd'] <= max_sd) &
+    (df_single['aum_cr'] >= min_aum) &
+    (df_single['aum_cr'] <= max_aum) &
+    (df_single['expense_ratio'] <= max_expense) &
+    (df_single['fund_age_years'] >= min_age)
+]
+
+# Show filter summary
+if len(df_single) == 0:
+    st.warning("⚠️ No funds match the current filter criteria. Please adjust the filters.")
+    st.stop()
+else:
+    st.caption(f"Showing **{len(df_single)}** funds after applying filters")
 
 # Calculate Pareto frontier
 df_single['is_efficient'] = is_pareto_efficient(df_single, x_col, y_col)

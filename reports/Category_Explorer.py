@@ -52,8 +52,6 @@ with st.sidebar:
     
     return_col = return_period_options[selected_period]
     
-    st.divider()
-    
     # View selector
     view_options = {
         "Return vs Risk (SD)": ("sd", "Risk-Return Tradeoff"),
