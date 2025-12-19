@@ -27,7 +27,7 @@ with st.sidebar:
     
     # Category selector
     all_categories = sorted(df['fund_category'].unique().tolist())
-    default_index = all_categories.index('Flexicap') if 'Flexicap' in all_categories else 0
+    default_index = all_categories.index('flexi-cap') if 'flexi-cap' in all_categories else 0
     single_category = st.selectbox(
         "Select Category:",
         options=all_categories,

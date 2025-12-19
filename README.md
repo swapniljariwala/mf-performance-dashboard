@@ -1,15 +1,56 @@
-# ET Money Multi-Cap Mutual Funds Scraper
+# ET Money Mutual Funds Scraper & Analytics Dashboard
 
-A Python scraper that collects all Multi-Cap mutual funds from ET Money, visits each fund's page, and extracts key metrics (AUM, Expense Ratio, Alpha, Sharpe, Beta, Standard Deviation) into a CSV file.
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License: WTFPL](https://img.shields.io/badge/License-WTFPL-brightgreen.svg)](https://en.wikipedia.org/wiki/WTFPL)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.28+-FF4B4B.svg)](https://streamlit.io)
+
+A Python scraper that collects mutual funds data from ET Money across multiple categories, and an interactive Streamlit dashboard for visual analysis and fund selection.
+
+> **Demo:** [Live Dashboard](https://your-app-name.streamlit.app) (coming soon)
+
+## Overview
+
+This project helps investors analyze and compare mutual funds across categories using data-driven visualizations:
+- 🎯 **Smart Fund Selection**: Identify Pareto-optimal funds on the efficient frontier
+- 📊 **Category Comparison**: Compare fund categories using AUM-weighted metrics  
+- 📈 **Distribution Analysis**: Visualize risk, return, and cost patterns
+- 🔍 **Advanced Filtering**: Filter by return period, risk tolerance, expense ratio, and more
+
+Perfect for investors who want to make informed decisions based on quantitative analysis rather than marketing materials.
+
+## Screenshots
+
+### Category Explorer
+Compare fund categories using AUM-weighted averages and distribution analysis:
+
+![Category Comparison](images/mf-category-data.png)
+
+### Efficient Frontier Analysis
+Identify Pareto-optimal funds with the best risk-return tradeoffs:
+
+![Best Funds](images/best-funds.png)
+
+### Fund Selection
+Browse and filter funds based on your criteria:
+
+![Funds List](images/funds-list.png)
 
 ## Features
 
+### Scraper
 - **Dual scraping approach**: Uses `requests` + `BeautifulSoup4` for initial fetches, with automatic fallback to Playwright for JavaScript-rendered content
+- **Multi-category support**: Scrapes multiple fund categories (Flexi-cap, Large-cap, Mid-cap, Small-cap, etc.)
 - **Robust data extraction**: Parses structured data (`__NEXT_DATA__`, JSON-LD) and HTML content
-- **Proxy support**: Configurable via CLI or environment variables
 - **Retry/backoff**: Built-in retry logic for failed requests with exponential backoff
 - **Progress logging**: Console logs for tracking scraping progress
 - **Error handling**: Gracefully handles missing data and continues scraping
+
+### Analytics Dashboard
+- **Category Explorer**: Compare fund categories using AUM-weighted averages
+- **Distribution Analysis**: Box plots for returns, risk, cost, and size metrics
+- **Efficient Frontier**: Identify Pareto-optimal funds within categories
+- **Interactive Filters**: Customize analysis by return period, risk tolerance, expense ratio, AUM, and fund age
+- **Visual Insights**: Plotly-based interactive charts for deep analysis
 
 ## Data Extracted
 
@@ -17,12 +58,69 @@ For each fund, the scraper extracts:
 
 - **Fund Name**
 - **Fund URL**
+- **Fund Age (Years)**
 - **AUM (₹ Cr)** - Assets Under Management in Crores
 - **Expense Ratio** (%)
 - **Alpha** - Excess return over benchmark
 - **Sharpe Ratio** - Risk-adjusted return metric
 - **Beta** - Market volatility measure
 - **Standard Deviation (SD)** - Volatility measure
+- **Portfolio Composition** - Large-cap %, Mid-cap %, Small-cap %, Other %
+- **Returns** - 1M, 3M, 6M, 1Y, 3Y, 5Y, and Since Inception returns
+
+## Quick Start - End-to-End Workflow
+
+### Step 1: Scrape Fund Data
+
+Scrape all fund categories (this will take some time):
+
+```bash
+# Scrape all categories listed in category_urls.txt
+python scrape_etmoney_multicap.py
+```
+
+This creates CSV files in the `output/` directory:
+- `etmoney_flexi-cap.csv`
+- `etmoney_large-cap.csv`
+- `etmoney_mid-cap.csv`
+- `etmoney_small-cap.csv`
+- etc.
+
+### Step 2: Convert to Parquet Format
+
+Combine all CSV files into a single optimized Parquet file:
+
+```bash
+python convert_to_parquet.py
+```
+
+This creates `output/all_funds.parquet` containing all funds from all categories.
+
+### Step 3: Launch the Dashboard
+
+Run the Streamlit analytics dashboard:
+
+```bash
+streamlit run reports/Category_Explorer.py
+```
+
+The dashboard will open in your browser at `http://localhost:8501`
+
+**Dashboard Features:**
+- **Category Explorer** (Main Page): Compare categories, view distributions
+- **Efficient Frontier** (Page 2): Find optimal funds within a category
+
+## Deployment to Streamlit Cloud
+
+1. Go to [share.streamlit.io](https://share.streamlit.io)
+2. Click "New app"
+3. Select your GitHub repository
+4. Set **Main file path**: `reports/Category_Explorer.py`
+5. Click "Deploy"
+
+Your dashboard will be live at `https://[your-app-name].streamlit.app`
+
+**Note:** Ensure `output/all_funds.parquet`, `reports/`, and `requirements.txt` are in your repository.
 
 ## Installation
 
@@ -84,7 +182,7 @@ python scrape_etmoney_multicap.py
 ### Advanced Options
 
 ```bash
-python scrape_etmoney_multicap.py --limit 10 --outfile my_funds.csv --sleep 1.5 --proxy http://proxy.example.com:8080
+python scrape_etmoney_multicap.py --limit 10 --outfile my_funds.csv --sleep 1.5
 ```
 
 ### CLI Arguments
@@ -94,29 +192,6 @@ python scrape_etmoney_multicap.py --limit 10 --outfile my_funds.csv --sleep 1.5 
 | `--limit` | int | None | Maximum number of funds to scrape (None = all) |
 | `--outfile` | str | `etmoney_multicap.csv` | Output CSV filename |
 | `--sleep` | float | 0.8 | Delay between requests in seconds |
-| `--proxy` | str | None | Proxy URL (e.g., `http://user:pass@host:port`) |
-
-### Proxy Configuration
-
-The scraper supports proxies in three ways (in order of precedence):
-
-1. **CLI argument**: `--proxy http://proxy.example.com:8080`
-2. **Environment variable**: `HTTP_PROXY` or `HTTPS_PROXY`
-3. **No proxy**: Direct connection
-
-Example with environment variable:
-
-**Windows (PowerShell)**:
-```powershell
-$env:HTTP_PROXY = "http://proxy.example.com:8080"
-python scrape_etmoney_multicap.py
-```
-
-**macOS/Linux**:
-```bash
-export HTTP_PROXY="http://proxy.example.com:8080"
-python scrape_etmoney_multicap.py
-```
 
 ## Examples
 
@@ -132,13 +207,38 @@ python scrape_etmoney_multicap.py --limit 5 --outfile test_funds.csv
 python scrape_etmoney_multicap.py --sleep 2.0
 ```
 
-### Scrape using proxy
+## Dependencies
 
-```bash
-python scrape_etmoney_multicap.py --proxy http://myproxy.com:8080
+- Python 3.8+
+- requests - HTTP library
+- beautifulsoup4 - HTML parsing
+- playwright - Browser automation (JavaScript fallback)
+- urllib3 - HTTP retry logic
+- streamlit - Dashboard framework
+- pandas - Data manipulation
+- plotly - Interactive visualizations
+- pyarrow - Parquet file support
+
+See [requirements.txt](requirements.txt) for specific versions.
+
+## Project Structure
+
 ```
-
-## Output
+mf-performance-dashboard/
+├── scrape_etmoney_multicap.py  # Main scraper script
+├── convert_to_parquet.py       # CSV to Parquet converter
+├── category_urls.txt           # List of fund category URLs to scrape
+├── requirements.txt            # Python dependencies
+├── LICENSE                     # MIT License
+├── output/                     # Scraped data
+│   ├── etmoney_*.csv          # Individual category CSVs
+│   └── all_funds.parquet      # Combined Parquet file (for deployment)
+└── reports/                    # Streamlit dashboard
+    ├── Category_Explorer.py   # Main dashboard page
+    ├── pages/
+    │   └── 1_🎯_Efficient_Frontier.py  # Efficient frontier analysis
+    └── README.md              # Dashboard design document
+```
 
 The scraper generates a CSV file with the following columns:
 
@@ -190,8 +290,7 @@ If some fields are consistently missing, check the logs for warnings. The scrape
 If you encounter 429 (Too Many Requests) errors:
 
 1. Increase the `--sleep` delay (e.g., `--sleep 2.0`)
-2. Use a proxy with `--proxy`
-3. Reduce concurrent scraping by using `--limit`
+2. Reduce concurrent scraping by using `--limit`
 
 ### Memory Issues
 
@@ -201,19 +300,27 @@ For very large scraping jobs, process in batches using `--limit`:
 python scrape_etmoney_multicap.py --limit 50 --outfile batch1.csv
 ```
 
-## Dependencies
-
-- Python 3.8+
-- requests - HTTP library
-- beautifulsoup4 - HTML parsing
-- playwright - Browser automation (JavaScript fallback)
-- urllib3 - HTTP retry logic
-
-See [requirements.txt](requirements.txt) for specific versions.
-
 ## License
 
-This scraper is for educational purposes only. Please respect ET Money's terms of service and robots.txt when using this tool. Use reasonable rate limiting and consider the impact on their servers.
+This project is licensed under the WTFPL (Do What The F*** You Want To Public License) - see the [LICENSE](LICENSE) file for full details.
+
+**TL;DR:** Do whatever you want with this code. Seriously.
+
+**Disclaimer:** This scraper is for educational and personal use only. Please respect ET Money's terms of service and robots.txt when using this tool. Use reasonable rate limiting and consider the impact on their servers. The authors are not responsible for any misuse.
+
+## Contributing
+
+Contributions are welcome! Feel free to:
+- 🐛 Report bugs or issues
+- 💡 Suggest new features or improvements
+- 🔧 Submit pull requests
+
+Please ensure your code follows the existing style and includes appropriate documentation.
+
+## Acknowledgments
+
+- Data source: [ET Money](https://www.etmoney.com)
+- Built with [Streamlit](https://streamlit.io), [Plotly](https://plotly.com), and [Pandas](https://pandas.pydata.org)
 
 ## Notes
 

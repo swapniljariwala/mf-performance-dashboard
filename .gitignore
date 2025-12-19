@@ -3,11 +3,16 @@ venv/
 env/
 ENV/
 .venv/
-output/
-# Data files
+
+# Data files - CSV intermediate files
+output/*.csv
 *.xlsx
 *.xls
 data/
+
+# Keep the parquet file for deployment
+!output/all_funds.parquet
+!output/.gitkeep
 
 # Python cache
 __pycache__/
