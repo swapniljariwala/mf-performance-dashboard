@@ -6,7 +6,11 @@ import pandas as pd
 import plotly.express as px
 
 # Page config
-st.set_page_config(page_title="MF Dashboard - Category Explorer", layout="wide")
+st.set_page_config(
+    page_title="MF Dashboard - Category Explorer",
+    page_icon="📊",
+    layout="wide"
+)
 
 # Load data
 @st.cache_data
@@ -154,37 +158,34 @@ st.plotly_chart(fig1, use_container_width=True)
 st.subheader("📦 Distribution Analysis by Category")
 
 # Create tabs for different metric groups
-tab1, tab2, tab3, tab4 = st.tabs(["📈 Returns", "⚠️ Risk Metrics", "💰 Cost", "📊 Fund Size"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["📈 Returns", "⚖️ Risk-Adjusted Returns", "⚠️ Risk Metrics", "💰 Cost", "📊 Fund Size"])
 
 with tab1:
     st.markdown("### Return Distribution Across Categories")
-    col1, col2, col3 = st.columns(3)
+    
+    # Calculate median order for sorting
+    category_order_alpha = df_filtered_categories.groupby('fund_category')['alpha'].median().sort_values(ascending=False).index.tolist()
+    category_order_5y = df_filtered_categories.groupby('fund_category')['return_5y'].median().sort_values(ascending=False).index.tolist()
+    category_order_3y = df_filtered_categories.groupby('fund_category')['return_3y'].median().sort_values(ascending=False).index.tolist()
+    category_order_1y = df_filtered_categories.groupby('fund_category')['return_1y'].median().sort_values(ascending=False).index.tolist()
+    
+    # First row: Alpha and 5Y
+    col1, col2 = st.columns(2)
     
     with col1:
-        fig_ret1y = px.box(
+        fig_alpha = px.box(
             df_filtered_categories,
             x="fund_category",
-            y="return_1y",
+            y="alpha",
             color="fund_category",
-            title="1-Year Returns",
-            labels={"fund_category": "Category", "return_1y": "1Y Return (%)"}
+            title="Alpha (Excess Return)",
+            labels={"fund_category": "Category", "alpha": "Alpha"}
         )
-        fig_ret1y.update_layout(showlegend=False, xaxis={'tickangle': 45})
-        st.plotly_chart(fig_ret1y, use_container_width=True)
+        fig_alpha.update_xaxes(categoryorder='array', categoryarray=category_order_alpha)
+        fig_alpha.update_layout(showlegend=False, xaxis={'tickangle': 45})
+        st.plotly_chart(fig_alpha, use_container_width=True)
     
     with col2:
-        fig_ret3y = px.box(
-            df_filtered_categories,
-            x="fund_category",
-            y="return_3y",
-            color="fund_category",
-            title="3-Year Returns",
-            labels={"fund_category": "Category", "return_3y": "3Y Return (%)"}
-        )
-        fig_ret3y.update_layout(showlegend=False, xaxis={'tickangle': 45})
-        st.plotly_chart(fig_ret3y, use_container_width=True)
-    
-    with col3:
         fig_ret5y = px.box(
             df_filtered_categories,
             x="fund_category",
@@ -193,12 +194,63 @@ with tab1:
             title="5-Year Returns",
             labels={"fund_category": "Category", "return_5y": "5Y Return (%)"}
         )
+        fig_ret5y.update_xaxes(categoryorder='array', categoryarray=category_order_5y)
         fig_ret5y.update_layout(showlegend=False, xaxis={'tickangle': 45})
         st.plotly_chart(fig_ret5y, use_container_width=True)
+    
+    # Second row: 3Y and 1Y
+    col3, col4 = st.columns(2)
+    
+    with col3:
+        fig_ret3y = px.box(
+            df_filtered_categories,
+            x="fund_category",
+            y="return_3y",
+            color="fund_category",
+            title="3-Year Returns",
+            labels={"fund_category": "Category", "return_3y": "3Y Return (%)"}
+        )
+        fig_ret3y.update_xaxes(categoryorder='array', categoryarray=category_order_3y)
+        fig_ret3y.update_layout(showlegend=False, xaxis={'tickangle': 45})
+        st.plotly_chart(fig_ret3y, use_container_width=True)
+    
+    with col4:
+        fig_ret1y = px.box(
+            df_filtered_categories,
+            x="fund_category",
+            y="return_1y",
+            color="fund_category",
+            title="1-Year Returns",
+            labels={"fund_category": "Category", "return_1y": "1Y Return (%)"}
+        )
+        fig_ret1y.update_xaxes(categoryorder='array', categoryarray=category_order_1y)
+        fig_ret1y.update_layout(showlegend=False, xaxis={'tickangle': 45})
+        st.plotly_chart(fig_ret1y, use_container_width=True)
 
 with tab2:
+    st.markdown("### Risk-Adjusted Return Distribution Across Categories")
+    category_order_sharpe = df_filtered_categories.groupby('fund_category')['sharpe'].median().sort_values(ascending=False).index.tolist()
+    
+    fig_sharpe = px.box(
+        df_filtered_categories,
+        x="fund_category",
+        y="sharpe",
+        color="fund_category",
+        title="Sharpe Ratio (Return per Unit Risk)",
+        labels={"fund_category": "Category", "sharpe": "Sharpe Ratio"}
+    )
+    fig_sharpe.update_xaxes(categoryorder='array', categoryarray=category_order_sharpe)
+    fig_sharpe.update_layout(showlegend=False, xaxis={'tickangle': 45}, height=500)
+    st.plotly_chart(fig_sharpe, use_container_width=True)
+    
+    st.caption("💡 **Sharpe Ratio** = Risk-adjusted return. Higher is better. Combines return and risk into single metric.")
+
+with tab3:
     st.markdown("### Risk Metrics Distribution Across Categories")
     col1, col2 = st.columns(2)
+    
+    category_order_sd = df_filtered_categories.groupby('fund_category')['sd'].median().sort_values().index.tolist()
+    category_order_beta = df_filtered_categories.groupby('fund_category')['beta'].median().sort_values().index.tolist()
     
     with col1:
         fig_sd = px.box(
@@ -206,9 +258,10 @@ with tab2:
             x="fund_category",
             y="sd",
             color="fund_category",
-            title="Standard Deviation (Risk)",
+            title="Standard Deviation (Volatility)",
             labels={"fund_category": "Category", "sd": "SD (%)"}
         )
+        fig_sd.update_xaxes(categoryorder='array', categoryarray=category_order_sd)
         fig_sd.update_layout(showlegend=False, xaxis={'tickangle': 45})
         st.plotly_chart(fig_sd, use_container_width=True)
     
@@ -221,11 +274,14 @@ with tab2:
             title="Beta (Market Sensitivity)",
             labels={"fund_category": "Category", "beta": "Beta"}
         )
+        fig_beta.update_xaxes(categoryorder='array', categoryarray=category_order_beta)
         fig_beta.update_layout(showlegend=False, xaxis={'tickangle': 45})
         st.plotly_chart(fig_beta, use_container_width=True)
 
-with tab3:
+with tab4:
     st.markdown("### Expense Ratio Distribution Across Categories")
+    category_order_expense = df_filtered_categories.groupby('fund_category')['expense_ratio'].median().sort_values().index.tolist()
+    
     fig_expense = px.box(
         df_filtered_categories,
         x="fund_category",
@@ -234,11 +290,14 @@ with tab3:
         title="Expense Ratio",
         labels={"fund_category": "Category", "expense_ratio": "Expense Ratio (%)"}
     )
+    fig_expense.update_xaxes(categoryorder='array', categoryarray=category_order_expense)
     fig_expense.update_layout(showlegend=False, xaxis={'tickangle': 45}, height=500)
     st.plotly_chart(fig_expense, use_container_width=True)
 
-with tab4:
+with tab5:
     st.markdown("### AUM Distribution Across Categories")
+    category_order_aum = df_filtered_categories.groupby('fund_category')['aum_cr'].median().sort_values(ascending=False).index.tolist()
+    
     fig_aum = px.box(
         df_filtered_categories,
         x="fund_category",
@@ -248,5 +307,6 @@ with tab4:
         labels={"fund_category": "Category", "aum_cr": "AUM (Crores)"},
         log_y=True  # Use log scale due to wide range
     )
+    fig_aum.update_xaxes(categoryorder='array', categoryarray=category_order_aum)
     fig_aum.update_layout(showlegend=False, xaxis={'tickangle': 45}, height=500)
     st.plotly_chart(fig_aum, use_container_width=True)
