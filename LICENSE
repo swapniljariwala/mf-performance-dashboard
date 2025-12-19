@@ -1,0 +1,154 @@
+THE VIBE-CODED SOFTWARE LICENSE (VCSL)
+Version 1.0 - "Looks good to me" Edition
+
+Copyright (C) 2025 mf-performance-dashboard
+All wrongs reserved. All rights unreserved.
+
+---
+
+PREAMBLE
+
+WHEREAS, no formal software engineering principles were harmed (or used) 
+in the making of this application;
+
+WHEREAS, the test suite is "trust me bro";
+
+NOW THEREFORE, behold the terms of this license:
+
+---
+
+ARTICLE I - ACKNOWLEDGMENT OF VIBES
+
+1.1 NATURE OF THE CODE
+    This application is VIBE-CODED. What does that mean? It means:
+    - The code works (probably)
+    - The architecture is "whatever felt right at the time"
+    - Comments are sparse because the vibes were immaculate
+    - If it breaks, the vibes were off that day
+    - Unit tests? The real unit test is production
+
+1.2 DEFINITION OF VIBE-CODING
+    "Vibe-Coding" (n.): A development methodology where decisions are made 
+    based on gut feeling, Stack Overflow snippets, and the desperate hope 
+    that it'll work. Success rate: surprisingly high. Confidence level: 
+    remarkably low.
+
+---
+
+ARTICLE II - THE "PLEASE DON'T SUE ME" CLAUSE
+
+2.1 INVESTMENT DECISIONS
+    If you are basing your actual investment decisions on this vibe-coded 
+    application, you need to seriously rethink your life choices. Like, 
+    really. We're talking fundamental reassessment here.
+
+2.2 FINANCIAL ADVICE DISCLAIMER
+    This is NOT financial advice. This is NOT investment advice. This is 
+    barely even SOFTWARE advice. This is a toy built by someone who thought 
+    "hey, wouldn't it be cool to visualize mutual fund data?" at 2 AM.
+
+2.3 LIMITATION OF LIABILITY
+    If you do invest based on this app and things go sideways:
+    - Don't blame me
+    - Seriously, don't
+    - I warned you (see Section 2.1)
+    - The vibes are not legally binding
+    - Your financial advisor is probably crying right now
+
+2.4 NO WARRANTY WHATSOEVER
+    This software comes with ZERO warranty. Not even the warranty of 
+    "it probably won't set your computer on fire." Could it work perfectly? 
+    Sure. Could it calculate that investing your life savings in a sketchy 
+    mutual fund is a good idea? Also possible. The vibes are mysterious.
+
+---
+
+ARTICLE III - USAGE RIGHTS (AKA DO WHATEVER)
+
+3.1 FREEDOM TO USE
+    You can use this application however you want:
+    - Personal use? Cool.
+    - Commercial use? Go wild.
+    - Teaching a course? Sure, why not.
+    - Starting a hedge fund? Bold move, but okay.
+
+3.2 FREEDOM TO MODIFY
+    You are free to extend, modify, refactor, or completely rewrite this code:
+    - Fork it (Don't laugh, I said fork)
+    - Improve it (not hard, tbh)
+    - Make it worse (also possible)
+    - Add actual tests (you won't)
+    - Deploy it to production (you absolute madlad)
+
+3.3 THE AI CODING REALITY
+    Let's be honest: you're probably not going to write a single line of 
+    code yourself. You're going to:
+    - Copy-paste into ChatGPT/Claude/Copilot
+    - Say "make it better"
+    - Ship whatever the AI spits out
+    - Call it "agile development"
+    
+    And you know what? That's fine. This entire thing was vibe-coded anyway. 
+    We're all just copy-pasting with extra steps. Welcome to 2025.
+
+3.4 ATTRIBUTION
+    Attribution is appreciated but not required. If you use this and make 
+    millions, maybe buy me a coffee. Or don't. The vibes are chill either way.
+
+---
+
+ARTICLE IV - TECHNICAL DISCLAIMERS
+
+4.1 CODE QUALITY
+    The code quality ranges from "actually pretty decent" to "how does this 
+    even work" depending on which file you're looking at and what time it 
+    was written.
+
+4.2 EDGE CASES
+    Edge cases were handled by the sophisticated technique of "I'll deal 
+    with it if someone complains." So far, the vibes have been protecting us.
+
+4.3 SCALABILITY
+    Will this scale? Probably not. Does it need to? Hopefully not. Is this 
+    premature optimization? Definitely.
+
+4.4 SECURITY
+    Security measures include:
+    - Hoping nobody tries to break it
+    - Using libraries that probably handle that stuff
+    - Vibes
+    
+---
+
+ARTICLE V - MORAL RESPONSIBILITIES
+
+5.1 BE COOL
+    - Don't hammer ET Money's servers like a DDoS attack
+    - Use rate limiting (it's in the code, because even vibes have limits)
+    - Respect their ToS and robots.txt
+    - Don't be that person who ruins it for everyone
+
+5.2 EDUCATIONAL PURPOSES
+    This is for learning and personal use. If you're a hedge fund manager 
+    who stumbled on this repo, maybe hire actual developers?
+
+---
+
+ARTICLE VI - GOVERNING LAW
+
+6.1 JURISDICTION
+    This license is governed by the laws of common sense, the principle of 
+    "don't be evil," and whatever jurisdiction thinks it has authority over 
+    vibes.
+
+6.2 DISPUTE RESOLUTION
+    Any disputes shall be resolved by:
+    - Taking a deep breath
+    - Touching grass
+    - Remembering this is free software written by vibes
+    - Moving on with your life
+
+---
+
+TL;DR: Do whatever you want, don't blame me for your bad investments, 
+and may the vibes be with you. 🚀

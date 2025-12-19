@@ -1,8 +1,9 @@
 # ET Money Mutual Funds Scraper & Analytics Dashboard
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![License: WTFPL](https://img.shields.io/badge/License-WTFPL-brightgreen.svg)](https://en.wikipedia.org/wiki/WTFPL)
+[![License: VCSL](https://img.shields.io/badge/License-VCSL-ff69b4.svg)](LICENSE)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.28+-FF4B4B.svg)](https://streamlit.io)
+[![Vibe: Immaculate](https://img.shields.io/badge/Vibe-Immaculate-blueviolet.svg)](LICENSE)
 
 A Python scraper that collects mutual funds data from ET Money across multiple categories, and an interactive Streamlit dashboard for visual analysis and fund selection.
 
@@ -302,11 +303,16 @@ python scrape_etmoney_multicap.py --limit 50 --outfile batch1.csv
 
 ## License
 
-This project is licensed under the WTFPL (Do What The F*** You Want To Public License) - see the [LICENSE](LICENSE) file for full details.
+This project is licensed under the **VCSL (Vibe-Coded Software License)** - see the [LICENSE](LICENSE) file for the full sarcastic details.
 
-**TL;DR:** Do whatever you want with this code. Seriously.
+**TL;DR:** 
+- ✨ This app is vibe-coded (it works, probably)
+- 🚨 Don't base your investments on this - seriously, rethink your life choices if you do
+- 🤷 Do whatever you want with the code - fork it, improve it, let an AI rewrite it
+- 🤖 You're probably not writing any code yourself anyway (we all just prompt engineering now)
+- 🙏 Don't blame me if things go sideways
 
-**Disclaimer:** This scraper is for educational and personal use only. Please respect ET Money's terms of service and robots.txt when using this tool. Use reasonable rate limiting and consider the impact on their servers. The authors are not responsible for any misuse.
+**May the vibes be with you.** 🚀
 
 ## Contributing
 
